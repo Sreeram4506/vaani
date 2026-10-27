@@ -19,7 +19,7 @@ const exotel = {
   callerId: process.env.EXOTEL_CALLER_ID ?? '',
   streamUrl: process.env.EXOTEL_STREAM_URL ?? '',
   statusCallbackUrl: process.env.EXOTEL_STATUS_CALLBACK_URL ?? '',
-  region: process.env.EXOTEL_REGION === 'sg' ? 'sg' : 'in',
+  region: ['sg', 'global', 'com'].includes((process.env.EXOTEL_REGION ?? '').toLowerCase()) ? 'sg' : 'in',
 }
 const openai = { apiKey: process.env.OPENAI_API_KEY ?? '', model: process.env.OPENAI_REALTIME_MODEL ?? 'gpt-realtime', voice: process.env.OPENAI_REALTIME_VOICE ?? 'marin' }
 app.use(cors())
@@ -84,15 +84,36 @@ app.post('/api/campaigns/demo/test-call', async (req, res) => {
   }
   if (!providerReady()) return res.status(503).json({ error: 'Live calling requires Exotel credentials, an approved ExoPhone, a public stream URL, and OPENAI_API_KEY.' })
   const body = new URLSearchParams({ From: contact.phone, CallerId: exotel.callerId, StreamUrl: streamUrl(), StreamType: 'bidirectional', Record: 'true', TimeLimit: String(agents[0]?.maxDuration ?? 300), ...(exotel.statusCallbackUrl ? { StatusCallback: exotel.statusCallbackUrl, 'StatusCallbackEvents[]': 'terminal' } : {}) })
-  const host = exotel.region === 'in' ? 'https://api.in.exotel.com' : 'https://api.exotel.com'
-  try {
-    const response = await fetch(`${host}/v1/Accounts/${exotel.accountSid}/Calls/connect`, { method: 'POST', headers: { authorization: `Basic ${Buffer.from(`${exotel.apiKey}:${exotel.apiToken}`).toString('base64')}`, 'content-type': 'application/x-www-form-urlencoded' }, body })
+  const primaryHost = ['sg', 'global', 'com'].includes(exotel.region) ? 'https://api.exotel.com' : 'https://api.in.exotel.com'
+  const fallbackHost = primaryHost === 'https://api.exotel.com' ? 'https://api.in.exotel.com' : 'https://api.exotel.com'
+
+  const callExotel = async (host: string) => {
+    const response = await fetch(`${host}/v1/Accounts/${exotel.accountSid}/Calls/connect`, {
+      method: 'POST',
+      headers: {
+        authorization: `Basic ${Buffer.from(`${exotel.apiKey}:${exotel.apiToken}`).toString('base64')}`,
+        'content-type': 'application/x-www-form-urlencoded'
+      },
+      body
+    })
     const raw = await response.text()
     const json = raw.trim().startsWith('{') ? JSON.parse(raw) as { Call?: { Sid?: string; Status?: string }; RestException?: { Message?: string } } : undefined
     const xmlValue = (tag: string) => raw.match(new RegExp(`<${tag}>([^<]+)</${tag}>`, 'i'))?.[1]
     const error = json?.RestException?.Message ?? xmlValue('Message') ?? xmlValue('Error')
-    if (!response.ok) return res.status(response.status).json({ error: error ?? 'Exotel rejected the call request.' })
-    const call: Call = { id: json?.Call?.Sid ?? xmlValue('Sid') ?? id('exotel'), contactId: contact.id, contact: contact.name, phone: contact.phone, startedAt: 'Just now', duration: '00:00', status: json?.Call?.Status ?? xmlValue('Status') ?? 'queued', outcome: 'pending', summary: 'Exotel call request accepted.', transcript: [] }
+    return { response, json, xmlValue, error }
+  }
+
+  try {
+    let result = await callExotel(primaryHost)
+    if (result.response.status === 401) {
+      const fallbackResult = await callExotel(fallbackHost)
+      if (fallbackResult.response.ok || fallbackResult.response.status !== 401) {
+        result = fallbackResult
+      }
+    }
+
+    if (!result.response.ok) return res.status(result.response.status).json({ error: result.error ?? 'Exotel rejected the call request.' })
+    const call: Call = { id: result.json?.Call?.Sid ?? result.xmlValue('Sid') ?? id('exotel'), contactId: contact.id, contact: contact.name, phone: contact.phone, startedAt: 'Just now', duration: '00:00', status: result.json?.Call?.Status ?? result.xmlValue('Status') ?? 'queued', outcome: 'pending', summary: 'Exotel call request accepted.', transcript: [] }
     calls.unshift(call)
     res.status(201).json({ call, testMode: false, provider })
   } catch (error) {

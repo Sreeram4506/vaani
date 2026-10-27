@@ -16,7 +16,12 @@ Open the exact `http://localhost:<port>` URL printed by Vite (normally `http://l
 
 ## Deploying to Render
 
-Create a **Web Service** using this repository. Set the build command to `npm run build` and the start command to `npm start`. Render supplies `PORT`; do not hard-code one there. The production server serves the compiled dashboard and API from the same service. Set every value from `.env.example` as a Render environment variable, and use the resulting public address as `EXOTEL_STATUS_CALLBACK_URL` followed by `/api/webhooks/exotel`.
+Create a **Web Service** using this repository (or deploy via the included `render.yaml` Blueprint).
+- **Build Command**: `npm install && npm run build`
+- **Start Command**: `npm start`
+- **Health Check Path**: `/api/health`
+
+Render supplies the `PORT` environment variable dynamically; do not hard-code `PORT=8787` in Render's Environment Variables tab. The production server automatically binds to `0.0.0.0:$PORT` and serves both the compiled Vite dashboard and the API backend. Add the remaining variables from `.env.example` in the Render dashboard, and set `EXOTEL_STATUS_CALLBACK_URL` to your Render public URL followed by `/api/webhooks/exotel`.
 
 ## Exotel setup
 

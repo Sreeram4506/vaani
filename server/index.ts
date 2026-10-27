@@ -2,12 +2,13 @@ import 'dotenv/config'
 import cors from 'cors'
 import express from 'express'
 import { createServer } from 'node:http'
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { WebSocket, WebSocketServer } from 'ws'
 
 const app = express()
-const port = Number(process.env.PORT ?? 8787)
+const port = Number(process.env.PORT || 8787) || 8787
 const host = process.env.HOST ?? '0.0.0.0'
 const testMode = process.env.TEST_MODE !== 'false'
 const provider = process.env.VOICE_PROVIDER ?? 'exotel'
@@ -56,7 +57,10 @@ const streamUrl = () => { try { const url = new URL(exotel.streamUrl); url.searc
 const providerReady = () => provider === 'exotel' && [exotel.accountSid, exotel.apiKey, exotel.apiToken, exotel.callerId, streamUrl()].every(Boolean) && openaiReady()
 const payload = () => ({ testMode, provider, providerReady: providerReady(), openaiReady: openaiReady(), campaign })
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, testMode, provider, providerReady: providerReady(), openaiReady: openaiReady(), realtimeModel: openai.model }))
+const healthHandler = (_req: express.Request, res: express.Response) => res.json({ ok: true, testMode, provider, providerReady: providerReady(), openaiReady: openaiReady(), realtimeModel: openai.model })
+app.get('/api/health', healthHandler)
+app.get('/health', healthHandler)
+app.get('/healthz', healthHandler)
 app.get('/api/dashboard', (_req, res) => res.json({ testMode, provider, providerReady: providerReady(), openaiReady: openaiReady(), campaign, metrics: { queued: Math.max(campaign.total - campaign.contacted, 0), inProgress: campaign.status === 'running' ? 8 : 0, connected: 146, leads: leads.length }, recentCalls: calls.slice(0, 5) }))
 app.get('/api/contacts', (req, res) => { const search = String(req.query.search ?? '').toLowerCase(); res.json({ contacts: contacts.filter(c => !search || `${c.name} ${c.phone} ${c.city}`.toLowerCase().includes(search)) }) })
 app.post('/api/contacts', (req, res) => { const { name, phone, city = '', listName = 'Imported contacts', consent = '', dnd = 'unknown' } = req.body as Partial<Contact>; if (!name || !phone) return res.status(400).json({ error: 'Name and phone are required.' }); const normalised = normalisePhone(phone); if (contacts.some(c => c.phone === normalised)) return res.status(409).json({ error: 'This phone number already exists.' }); const contact: Contact = { id: id('c'), name, phone: normalised, city, listName, consent, dnd: dnd === 'blocked' ? 'blocked' : dnd === 'clear' ? 'clear' : 'unknown' }; contacts.unshift(contact); res.status(201).json({ contact }) })
@@ -110,9 +114,24 @@ app.get('/api/webhooks/events', (_req, res) => res.json({ events }))
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const distDir = path.join(rootDir, 'dist')
+const indexHtml = path.join(distDir, 'index.html')
+
 app.use(express.static(distDir))
-app.get('/', (_req, res) => res.sendFile(path.join(distDir, 'index.html')))
-app.get('/{*splat}', (_req, res) => res.sendFile(path.join(distDir, 'index.html')))
+
+const serveApp = (_req: express.Request, res: express.Response) => {
+  if (fs.existsSync(indexHtml)) {
+    return res.sendFile(indexHtml)
+  }
+  return res.status(200).send('Vaanii voice agent server running (API online). UI build not found.')
+}
+
+app.get('/', serveApp)
+app.get('/{*splat}', (req, res) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/exotel')) {
+    return res.status(404).json({ error: 'Endpoint not found' })
+  }
+  return serveApp(req, res)
+})
 
 const server = createServer(app)
 const exotelStreams = new WebSocketServer({ noServer: true })

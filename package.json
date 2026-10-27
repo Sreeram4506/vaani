@@ -8,6 +8,7 @@
     "server": "tsx server/index.ts",
     "dev:full": "concurrently -k \"npm run server\" \"npm run dev\"",
     "build": "tsc -b && vite build",
+    "start": "tsx server/index.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },

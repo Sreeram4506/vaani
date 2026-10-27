@@ -1,9 +1,12 @@
 import 'dotenv/config'
 import cors from 'cors'
 import express from 'express'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const app = express()
 const port = Number(process.env.PORT ?? 8787)
+const host = process.env.HOST ?? '0.0.0.0'
 const testMode = process.env.TEST_MODE !== 'false'
 const provider = process.env.VOICE_PROVIDER ?? 'exotel'
 const exotel = {
@@ -73,4 +76,9 @@ app.post('/api/test/calls/complete', (req, res) => { if (!testMode) return res.s
 app.post('/api/webhooks/voice', (req, res) => { const event = { id: id('event'), receivedAt: new Date().toISOString(), payload: req.body }; events.unshift(event); res.status(202).json({ accepted: true, id: event.id }) })
 app.post('/api/webhooks/exotel', (req, res) => { const event = { id: id('exotel-event'), receivedAt: new Date().toISOString(), payload: req.body }; events.unshift(event); res.status(202).json({ accepted: true, id: event.id }) })
 app.get('/api/webhooks/events', (_req, res) => res.json({ events }))
-app.listen(port, '127.0.0.1', () => console.log(`Voice-agent API listening at http://127.0.0.1:${port} (${testMode ? 'test mode' : 'production mode'})`))
+
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const distDir = path.join(rootDir, 'dist')
+app.use(express.static(distDir))
+app.get('/{*splat}', (_req, res) => res.sendFile(path.join(distDir, 'index.html')))
+app.listen(port, host, () => console.log(`Vaanii server listening on ${host}:${port} (${testMode ? 'test mode' : 'live mode'})`))

@@ -1,8 +1,10 @@
 import 'dotenv/config'
 import cors from 'cors'
 import express from 'express'
+import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { WebSocket, WebSocketServer } from 'ws'
 
 const app = express()
 const port = Number(process.env.PORT ?? 8787)
@@ -18,6 +20,7 @@ const exotel = {
   statusCallbackUrl: process.env.EXOTEL_STATUS_CALLBACK_URL ?? '',
   region: process.env.EXOTEL_REGION === 'sg' ? 'sg' : 'in',
 }
+const openai = { apiKey: process.env.OPENAI_API_KEY ?? '', model: process.env.OPENAI_REALTIME_MODEL ?? 'gpt-realtime', voice: process.env.OPENAI_REALTIME_VOICE ?? 'marin' }
 app.use(cors())
 app.use(express.json({ limit: '2mb' }))
 
@@ -48,11 +51,13 @@ const settings: Settings = { businessName: 'Sree Tech', timezone: 'Asia/Kolkata'
 const events: Array<{ id: string; receivedAt: string; payload: unknown }> = []
 const id = (prefix: string) => `${prefix}-${crypto.randomUUID().slice(0, 8)}`
 const normalisePhone = (value: string) => { const digits = value.replace(/\D/g, ''); return digits.length === 10 ? `+91${digits}` : value.startsWith('+') ? `+${digits}` : `+${digits}` }
-const providerReady = () => provider === 'exotel' && [exotel.accountSid, exotel.apiKey, exotel.apiToken, exotel.callerId, exotel.streamUrl].every(Boolean)
-const payload = () => ({ testMode, provider, providerReady: providerReady(), campaign })
+const openaiReady = () => Boolean(openai.apiKey)
+const streamUrl = () => { try { const url = new URL(exotel.streamUrl); url.searchParams.set('sample-rate', '24000'); return url.toString() } catch { return '' } }
+const providerReady = () => provider === 'exotel' && [exotel.accountSid, exotel.apiKey, exotel.apiToken, exotel.callerId, streamUrl()].every(Boolean) && openaiReady()
+const payload = () => ({ testMode, provider, providerReady: providerReady(), openaiReady: openaiReady(), campaign })
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, testMode, provider, providerReady: providerReady() }))
-app.get('/api/dashboard', (_req, res) => res.json({ testMode, provider, providerReady: providerReady(), campaign, metrics: { queued: Math.max(campaign.total - campaign.contacted, 0), inProgress: campaign.status === 'running' ? 8 : 0, connected: 146, leads: leads.length }, recentCalls: calls.slice(0, 5) }))
+app.get('/api/health', (_req, res) => res.json({ ok: true, testMode, provider, providerReady: providerReady(), openaiReady: openaiReady(), realtimeModel: openai.model }))
+app.get('/api/dashboard', (_req, res) => res.json({ testMode, provider, providerReady: providerReady(), openaiReady: openaiReady(), campaign, metrics: { queued: Math.max(campaign.total - campaign.contacted, 0), inProgress: campaign.status === 'running' ? 8 : 0, connected: 146, leads: leads.length }, recentCalls: calls.slice(0, 5) }))
 app.get('/api/contacts', (req, res) => { const search = String(req.query.search ?? '').toLowerCase(); res.json({ contacts: contacts.filter(c => !search || `${c.name} ${c.phone} ${c.city}`.toLowerCase().includes(search)) }) })
 app.post('/api/contacts', (req, res) => { const { name, phone, city = '', listName = 'Imported contacts', consent = '', dnd = 'unknown' } = req.body as Partial<Contact>; if (!name || !phone) return res.status(400).json({ error: 'Name and phone are required.' }); const normalised = normalisePhone(phone); if (contacts.some(c => c.phone === normalised)) return res.status(409).json({ error: 'This phone number already exists.' }); const contact: Contact = { id: id('c'), name, phone: normalised, city, listName, consent, dnd: dnd === 'blocked' ? 'blocked' : dnd === 'clear' ? 'clear' : 'unknown' }; contacts.unshift(contact); res.status(201).json({ contact }) })
 app.post('/api/contacts/import', (req, res) => { const rows = Array.isArray(req.body?.contacts) ? req.body.contacts : []; let imported = 0; let skipped = 0; rows.forEach((row: Partial<Contact>) => { if (!row.name || !row.phone) { skipped++; return }; const phone = normalisePhone(row.phone); if (contacts.some(c => c.phone === phone)) { skipped++; return }; contacts.push({ id: id('c'), name: row.name, phone, city: row.city ?? '', listName: row.listName ?? 'Imported contacts', consent: row.consent ?? '', dnd: 'unknown' }); imported++ }); res.status(201).json({ imported, skipped }) })
@@ -65,7 +70,7 @@ app.get('/api/campaigns/demo', (_req, res) => res.json(payload()))
 app.patch('/api/campaigns/demo', (req, res) => { const patch = req.body as Partial<typeof campaign>; const maxConcurrent = patch.maxConcurrent === undefined ? campaign.maxConcurrent : Number(patch.maxConcurrent); const attempts = patch.attempts === undefined ? campaign.attempts : Number(patch.attempts); if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1 || maxConcurrent > 20) return res.status(400).json({ error: 'Parallel calls must be between 1 and 20.' }); if (!Number.isInteger(attempts) || attempts < 1 || attempts > 3) return res.status(400).json({ error: 'Attempts must be between 1 and 3.' }); if (patch.windowStart && patch.windowEnd && patch.windowStart >= patch.windowEnd) return res.status(400).json({ error: 'The calling window must end after it starts.' }); Object.assign(campaign, { ...patch, maxConcurrent, attempts }); res.json(payload()) })
 app.post('/api/campaigns/demo/start', (_req, res) => { campaign.status = 'running'; res.json(payload()) })
 app.post('/api/campaigns/demo/pause', (_req, res) => { campaign.status = 'paused'; res.json(payload()) })
-app.post('/api/campaigns/demo/test-call', async (req, res) => { const contact = contacts.find(c => c.id === req.body.contactId) ?? contacts[0]; if (contact.dnd === 'blocked' || !contact.consent) return res.status(422).json({ error: 'Contact cannot be called because consent or DND checks failed.' }); if (testMode) { const call: Call = { id: id('call'), contactId: contact.id, contact: contact.name, phone: contact.phone, startedAt: 'Just now', duration: '00:00', status: 'in_progress', outcome: 'pending', summary: 'Exotel test call simulation started. No phone number was dialed.', transcript: [] }; calls.unshift(call); return res.status(201).json({ call, testMode: true, provider }) } if (!providerReady()) return res.status(503).json({ error: 'Exotel is not configured. Add the Account SID, API key, API token, ExoPhone caller ID, and secure Stream URL.' }); const body = new URLSearchParams({ From: contact.phone, CallerId: exotel.callerId, StreamUrl: exotel.streamUrl, StreamType: 'bidirectional', Record: 'true', TimeLimit: String(agents[0]?.maxDuration ?? 300), ...(exotel.statusCallbackUrl ? { StatusCallback: exotel.statusCallbackUrl, 'StatusCallbackEvents[]': 'terminal' } : {}) }); const host = exotel.region === 'in' ? 'https://api.in.exotel.com' : 'https://api.exotel.com'; try { const response = await fetch(`${host}/v1/Accounts/${exotel.accountSid}/Calls/connect`, { method: 'POST', headers: { authorization: `Basic ${Buffer.from(`${exotel.apiKey}:${exotel.apiToken}`).toString('base64')}`, 'content-type': 'application/x-www-form-urlencoded' }, body }); const data = await response.json() as { Call?: { Sid?: string; Status?: string }; RestException?: { Message?: string } }; if (!response.ok) return res.status(response.status).json({ error: data.RestException?.Message ?? 'Exotel rejected the call request.' }); const call: Call = { id: data.Call?.Sid ?? id('exotel'), contactId: contact.id, contact: contact.name, phone: contact.phone, startedAt: 'Just now', duration: '00:00', status: data.Call?.Status ?? 'queued', outcome: 'pending', summary: 'Exotel call request accepted.', transcript: [] }; calls.unshift(call); res.status(201).json({ call, testMode: false, provider }) } catch { res.status(502).json({ error: 'Could not reach Exotel. Check the configured region and network connection.' }) } })
+app.post('/api/campaigns/demo/test-call', async (req, res) => { const contact = contacts.find(c => c.id === req.body.contactId) ?? contacts[0]; if (contact.dnd === 'blocked' || !contact.consent) return res.status(422).json({ error: 'Contact cannot be called because consent or DND checks failed.' }); if (testMode) { const call: Call = { id: id('call'), contactId: contact.id, contact: contact.name, phone: contact.phone, startedAt: 'Just now', duration: '00:00', status: 'in_progress', outcome: 'pending', summary: 'Exotel test call simulation started. No phone number was dialed.', transcript: [] }; calls.unshift(call); return res.status(201).json({ call, testMode: true, provider }) } if (!providerReady()) return res.status(503).json({ error: 'Live calling requires Exotel credentials, an approved ExoPhone, a public stream URL, and OPENAI_API_KEY.' }); const body = new URLSearchParams({ From: contact.phone, CallerId: exotel.callerId, StreamUrl: streamUrl(), StreamType: 'bidirectional', Record: 'true', TimeLimit: String(agents[0]?.maxDuration ?? 300), ...(exotel.statusCallbackUrl ? { StatusCallback: exotel.statusCallbackUrl, 'StatusCallbackEvents[]': 'terminal' } : {}) }); const host = exotel.region === 'in' ? 'https://api.in.exotel.com' : 'https://api.exotel.com'; try { const response = await fetch(`${host}/v1/Accounts/${exotel.accountSid}/Calls/connect`, { method: 'POST', headers: { authorization: `Basic ${Buffer.from(`${exotel.apiKey}:${exotel.apiToken}`).toString('base64')}`, 'content-type': 'application/x-www-form-urlencoded' }, body }); const data = await response.json() as { Call?: { Sid?: string; Status?: string }; RestException?: { Message?: string } }; if (!response.ok) return res.status(response.status).json({ error: data.RestException?.Message ?? 'Exotel rejected the call request.' }); const call: Call = { id: data.Call?.Sid ?? id('exotel'), contactId: contact.id, contact: contact.name, phone: contact.phone, startedAt: 'Just now', duration: '00:00', status: data.Call?.Status ?? 'queued', outcome: 'pending', summary: 'Exotel call request accepted.', transcript: [] }; calls.unshift(call); res.status(201).json({ call, testMode: false, provider }) } catch { res.status(502).json({ error: 'Could not reach Exotel. Check the configured region and network connection.' }) } })
 app.get('/api/calls', (_req, res) => res.json({ calls }))
 app.get('/api/calls/:id', (req, res) => { const call = calls.find(c => c.id === req.params.id); if (!call) return res.sendStatus(404); res.json({ call }) })
 app.get('/api/leads', (_req, res) => res.json({ leads }))
@@ -82,4 +87,28 @@ const distDir = path.join(rootDir, 'dist')
 app.use(express.static(distDir))
 app.get('/', (_req, res) => res.sendFile(path.join(distDir, 'index.html')))
 app.get('/{*splat}', (_req, res) => res.sendFile(path.join(distDir, 'index.html')))
-app.listen(port, host, () => console.log(`Vaanii server listening on ${host}:${port} (${testMode ? 'test mode' : 'live mode'})`))
+
+const server = createServer(app)
+const exotelStreams = new WebSocketServer({ noServer: true })
+server.on('upgrade', (request, socket, head) => {
+  const pathname = new URL(request.url ?? '/', 'http://localhost').pathname
+  if (pathname !== '/exotel/media') return socket.destroy()
+  exotelStreams.handleUpgrade(request, socket, head, stream => exotelStreams.emit('connection', stream, request))
+})
+
+exotelStreams.on('connection', exotelSocket => {
+  if (!openaiReady()) return exotelSocket.close(1011, 'OpenAI is not configured')
+  let streamSid = ''
+  let customerName = 'there'
+  let greeted = false
+  const realtime = new WebSocket(`wss://api.openai.com/v1/realtime?model=${encodeURIComponent(openai.model)}`, { headers: { Authorization: `Bearer ${openai.apiKey}` } })
+  const close = () => { if (realtime.readyState === WebSocket.OPEN || realtime.readyState === WebSocket.CONNECTING) realtime.close(); if (exotelSocket.readyState === WebSocket.OPEN || exotelSocket.readyState === WebSocket.CONNECTING) exotelSocket.close() }
+  realtime.on('open', () => realtime.send(JSON.stringify({ type: 'session.update', session: { type: 'realtime', output_modalities: ['audio'], instructions: agents[0]?.prompt ?? 'You are a helpful Telugu voice assistant. Clearly disclose that you are an AI assistant.', audio: { input: { format: { type: 'audio/pcm', rate: 24000 }, turn_detection: { type: 'server_vad' } }, output: { format: { type: 'audio/pcm', rate: 24000 }, voice: openai.voice } } } })))
+  realtime.on('message', raw => { try { const message = JSON.parse(raw.toString()) as { type: string; delta?: string; error?: { message?: string } }; if (message.type === 'session.updated' && !greeted) { greeted = true; const greeting = (agents[0]?.firstMessage ?? 'Hello, I am an AI assistant.').replace('{name}', customerName); realtime.send(JSON.stringify({ type: 'response.create', response: { output_modalities: ['audio'], instructions: `${agents[0]?.prompt ?? ''}\nOpen with this greeting exactly: ${greeting}` } })) } if (message.type === 'response.output_audio.delta' && message.delta && streamSid && exotelSocket.readyState === WebSocket.OPEN) exotelSocket.send(JSON.stringify({ event: 'media', stream_sid: streamSid, media: { payload: message.delta } })); if (message.type === 'error') console.error(`OpenAI Realtime error: ${message.error?.message ?? 'unknown error'}`) } catch { /* Ignore malformed provider frames. */ } })
+  realtime.on('error', error => console.error(`OpenAI Realtime connection error: ${error.message}`))
+  exotelSocket.on('message', raw => { try { const event = JSON.parse(raw.toString()) as { event: string; start?: { stream_sid?: string; from?: string }; media?: { payload?: string } }; if (event.event === 'start') { streamSid = event.start?.stream_sid ?? ''; customerName = event.start?.from ?? 'there' } if (event.event === 'media' && event.media?.payload && realtime.readyState === WebSocket.OPEN) realtime.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: event.media.payload })); if (event.event === 'stop') close() } catch { exotelSocket.close(1003, 'Invalid Exotel event') } })
+  exotelSocket.on('close', () => { if (realtime.readyState === WebSocket.OPEN || realtime.readyState === WebSocket.CONNECTING) realtime.close() })
+  exotelSocket.on('error', error => console.error(`Exotel stream error: ${error.message}`))
+})
+
+server.listen(port, host, () => console.log(`Vaanii server listening on ${host}:${port} (${testMode ? 'test mode' : 'live mode'})`))

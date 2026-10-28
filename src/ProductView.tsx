@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  ArrowSquareOut, DownloadSimple, FloppyDisk, MagnifyingGlass,
-  Phone, Plus, TestTube, UserPlus, X, Envelope, WhatsappLogo
+  DownloadSimple, FloppyDisk, MagnifyingGlass,
+  Phone, Plus, TestTube, UserPlus, X
 } from '@phosphor-icons/react'
 
-type Props = { active: string; notify: (message: string) => void; openWebCall?: (agentId?: string) => void }
+type Props = { active: string; notify: (message: string) => void; openWebCall?: (agentId?: string) => void; orgId: string }
 type Contact = { id: string; name: string; phone: string; city: string; listName: string; consent: string; dnd: string }
 type Agent = { id: string; name: string; language: string; voice: string; firstMessage: string; prompt: string; maxDuration: number }
 type Call = { id: string; contact: string; phone: string; startedAt: string; duration: string; status: string; outcome: string; summary: string; transcript: Array<{ role: string; text: string }> }
@@ -18,20 +18,21 @@ const get = async <T,>(url: string): Promise<T> => {
   return response.json()
 }
 
-export function ProductView({ active, notify, openWebCall }: Props) {
-  if (active === 'Contacts') return <Contacts notify={notify} />
-  if (active === 'Agents') return <Agents notify={notify} openWebCall={openWebCall} />
-  if (active === 'Campaigns') return <Campaigns notify={notify} openWebCall={openWebCall} />
-  if (active === 'Call logs') return <CallLogs notify={notify} />
-  if (active === 'Settings') return <SettingsView notify={notify} />
-  return <Leads notify={notify} />
+export function ProductView({ active, notify, openWebCall, orgId }: Props) {
+  const base = `/api/org/${orgId}`
+  if (active === 'Contacts') return <Contacts notify={notify} base={base} />
+  if (active === 'Agents') return <Agents notify={notify} openWebCall={openWebCall} base={base} />
+  if (active === 'Campaigns') return <Campaigns notify={notify} openWebCall={openWebCall} base={base} />
+  if (active === 'Call logs') return <CallLogs notify={notify} base={base} />
+  if (active === 'Settings') return <SettingsView notify={notify} base={base} />
+  return <Leads notify={notify} base={base} />
 }
 
 function Title({ title, detail, action }: { title: string; detail: string; action?: ReactNode }) {
   return (
     <div className="product-title">
       <div>
-        <p className="eyebrow">ARTH Workspace</p>
+        <p className="eyebrow">Workspace</p>
         <h1>{title}</h1>
         <p>{detail}</p>
       </div>
@@ -40,16 +41,16 @@ function Title({ title, detail, action }: { title: string; detail: string; actio
   )
 }
 
-function Contacts({ notify }: { notify: Props['notify'] }) {
+function Contacts({ notify, base }: { notify: Props['notify']; base: string }) {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ name: '', countryCode: '+91', phone: '', city: '', consent: '', dnd: 'clear' })
 
   const load = () =>
-    get<{ contacts: Contact[] }>('/api/contacts')
+    get<{ contacts: Contact[] }>(`${base}/contacts`)
       .then(r => setContacts(r.contacts))
-      .catch(() => notify('Could not load contacts. Start the local API.'))
+      .catch(() => notify('Could not load contacts.'))
 
   useEffect(() => {
     void load()
@@ -66,13 +67,13 @@ function Contacts({ notify }: { notify: Props['notify'] }) {
   const save = async (event: React.FormEvent) => {
     event.preventDefault()
     const digits = form.phone.replace(/\D/g, '')
-    const response = await fetch('/api/contacts', {
+    const response = await fetch(`${base}/contacts`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         ...form,
         phone: `${form.countryCode}${digits}`,
-        listName: 'High-Growth Brands & D2C'
+        listName: 'General'
       })
     })
     if (!response.ok) {
@@ -81,7 +82,7 @@ function Contacts({ notify }: { notify: Props['notify'] }) {
     }
     setOpen(false)
     setForm({ name: '', countryCode: '+91', phone: '', city: '', consent: '', dnd: 'clear' })
-    notify('Contact added to ARTH outreach list.')
+    notify('Contact added.')
     load()
   }
 
@@ -218,13 +219,13 @@ function Contacts({ notify }: { notify: Props['notify'] }) {
   )
 }
 
-function Agents({ notify, openWebCall }: { notify: Props['notify']; openWebCall?: Props['openWebCall'] }) {
+function Agents({ notify, openWebCall, base }: { notify: Props['notify']; openWebCall?: Props['openWebCall']; base: string }) {
   const [agents, setAgents] = useState<Agent[]>([])
   const [editing, setEditing] = useState<Agent | null>(null)
   const [creating, setCreating] = useState(false)
 
   const load = () =>
-    get<{ agents: Agent[] }>('/api/agents')
+    get<{ agents: Agent[] }>(`${base}/agents`)
       .then(r => {
         setAgents(r.agents)
         setEditing(r.agents[0] ?? null)
@@ -237,7 +238,7 @@ function Agents({ notify, openWebCall }: { notify: Props['notify']; openWebCall?
 
   const save = async () => {
     if (!editing) return
-    const response = await fetch(`/api/agents/${editing.id}`, {
+    const response = await fetch(`${base}/agents/${editing.id}`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(editing)
@@ -249,7 +250,7 @@ function Agents({ notify, openWebCall }: { notify: Props['notify']; openWebCall?
   const create = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
-    const response = await fetch('/api/agents', {
+    const response = await fetch(`${base}/agents`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -289,8 +290,8 @@ function Agents({ notify, openWebCall }: { notify: Props['notify']; openWebCall?
   return (
     <>
       <Title
-        title="ARTH Predefined Agents"
-        detail="5 pre-configured voice agents specialized in Marketing, Content, Technology, Local Growth, and Audits."
+        title="Voice Agents"
+        detail="Pre-configured voice agents for this organization."
         action={
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
@@ -331,7 +332,7 @@ function Agents({ notify, openWebCall }: { notify: Props['notify']; openWebCall?
           <section className="panel editor">
             <div className="panel-header">
               <div>
-                <p className="section-kicker">ARTH Agent Configuration</p>
+                <p className="section-kicker">Agent Configuration</p>
                 <h2>
                   {editing.name} <span style={{ fontSize: '12px', fontWeight: 500, color: '#7b839f' }}>({getAgentTag(editing.name)})</span>
                 </h2>
@@ -400,7 +401,7 @@ function Agents({ notify, openWebCall }: { notify: Props['notify']; openWebCall?
                 />
               </label>
               <label className="wide">
-                System prompt & ARTH company guidelines
+                System prompt & company guidelines
                 <textarea
                   style={{ minHeight: '140px' }}
                   value={editing.prompt}
@@ -413,7 +414,7 @@ function Agents({ notify, openWebCall }: { notify: Props['notify']; openWebCall?
       </div>
 
       {creating && (
-        <Modal title="Create custom ARTH agent" close={() => setCreating(false)}>
+        <Modal title="Create new agent" close={() => setCreating(false)}>
           <form className="form-grid" onSubmit={create}>
             <label>
               Agent name
@@ -454,19 +455,19 @@ function Agents({ notify, openWebCall }: { notify: Props['notify']; openWebCall?
   )
 }
 
-function Campaigns({ notify, openWebCall }: { notify: Props['notify']; openWebCall?: Props['openWebCall'] }) {
+function Campaigns({ notify, openWebCall, base }: { notify: Props['notify']; openWebCall?: Props['openWebCall']; base: string }) {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [callOpen, setCallOpen] = useState(false)
   const [selectedContactId, setSelectedContactId] = useState('')
 
   useEffect(() => {
-    get<{ campaign: Campaign }>('/api/campaigns/demo').then(r => setCampaign(r.campaign))
-    get<{ contacts: Contact[] }>('/api/contacts').then(r => setContacts(r.contacts))
+    get<{ campaign: Campaign }>(`${base}/campaigns/demo`).then(r => setCampaign(r.campaign))
+    get<{ contacts: Contact[] }>(`${base}/contacts`).then(r => setContacts(r.contacts))
   }, [])
 
   const update = async (patch: object) => {
-    const r = await fetch('/api/campaigns/demo', {
+    const r = await fetch(`${base}/campaigns/demo`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(patch)
@@ -474,11 +475,11 @@ function Campaigns({ notify, openWebCall }: { notify: Props['notify']; openWebCa
     const body = await r.json()
     if (!r.ok) return notify(body.error || 'Could not save campaign settings.')
     setCampaign(body.campaign)
-    notify('ARTH campaign settings saved.')
+    notify('Campaign settings saved.')
   }
 
   const testCall = async () => {
-    const r = await fetch('/api/campaigns/demo/test-call', {
+    const r = await fetch(`${base}/campaigns/demo/test-call`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ contactId: selectedContactId })
@@ -632,12 +633,12 @@ function Campaigns({ notify, openWebCall }: { notify: Props['notify']; openWebCa
   )
 }
 
-function CallLogs({ notify }: { notify: Props['notify'] }) {
+function CallLogs({ notify, base }: { notify: Props['notify']; base: string }) {
   const [calls, setCalls] = useState<Call[]>([])
   const [selected, setSelected] = useState<Call | null>(null)
 
   const load = () =>
-    get<{ calls: Call[] }>('/api/calls')
+    get<{ calls: Call[] }>(`${base}/calls`)
       .then(r => setCalls(r.calls))
       .catch(() => notify('Could not load calls.'))
 
@@ -649,7 +650,7 @@ function CallLogs({ notify }: { notify: Props['notify'] }) {
     <>
       <Title
         title="Call logs"
-        detail="Review outcomes, summaries, and transcripts from every ARTH AI interaction."
+        detail="Review outcomes, summaries, and transcripts from every AI voice interaction."
       />
       <section className="panel product-panel">
         <div className="table-wrap">
@@ -717,11 +718,11 @@ function CallLogs({ notify }: { notify: Props['notify'] }) {
   )
 }
 
-function Leads({ notify }: { notify: Props['notify'] }) {
+function Leads({ notify, base }: { notify: Props['notify']; base: string }) {
   const [leads, setLeads] = useState<Lead[]>([])
 
   useEffect(() => {
-    get<{ leads: Lead[] }>('/api/leads')
+    get<{ leads: Lead[] }>(`${base}/leads`)
       .then(r => setLeads(r.leads))
       .catch(() => notify('Could not load leads.'))
   }, [])
@@ -732,7 +733,7 @@ function Leads({ notify }: { notify: Props['notify'] }) {
         title="Leads and analytics"
         detail="Qualified brand prospects ready for Strategy Calls, Video Concepts, and Website Audits."
         action={
-          <a className="primary-button" href="/api/leads/export.csv">
+          <a className="primary-button" href={`${base}/leads/export.csv`}>
             <DownloadSimple size={17} /> Export CSV
           </a>
         }
@@ -788,18 +789,18 @@ function Leads({ notify }: { notify: Props['notify'] }) {
   )
 }
 
-function SettingsView({ notify }: { notify: Props['notify'] }) {
+function SettingsView({ notify, base }: { notify: Props['notify']; base: string }) {
   const [settings, setSettings] = useState<Settings | null>(null)
 
   useEffect(() => {
-    get<{ settings: Settings }>('/api/settings')
+    get<{ settings: Settings }>(`${base}/settings`)
       .then(r => setSettings(r.settings))
       .catch(() => notify('Could not load settings.'))
   }, [])
 
   const save = async () => {
     if (!settings) return
-    const response = await fetch('/api/settings', {
+    const response = await fetch(`${base}/settings`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(settings)
@@ -807,7 +808,7 @@ function SettingsView({ notify }: { notify: Props['notify'] }) {
     const body = await response.json()
     if (!response.ok) return notify(body.error || 'Could not save settings.')
     setSettings(body.settings)
-    notify('ARTH workspace settings saved.')
+    notify('Workspace settings saved.')
   }
 
   if (!settings) return <div className="loading-block">Loading settings...</div>
@@ -818,46 +819,6 @@ function SettingsView({ notify }: { notify: Props['notify'] }) {
         title="Workspace settings"
         detail="Company information, compliance controls, and telephony provider parameters."
       />
-
-      {/* ARTH Company Info Card */}
-      <section className="panel" style={{ padding: '22px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-          <div>
-            <p className="section-kicker">Company Profile</p>
-            <h2 style={{ margin: 0, fontSize: '18px', color: '#172044' }}>ARTH Marketing Media</h2>
-            <p style={{ margin: '6px 0 0', color: '#6d748e', fontSize: '13px' }}>
-              Marketing. Content. Technology. Helping businesses attract customers both online and offline.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <a
-              href="https://arth-mauve.vercel.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="secondary-button"
-              style={{ textDecoration: 'none' }}
-            >
-              <ArrowSquareOut size={16} /> Website
-            </a>
-            <a
-              href="https://wa.me/919809987999"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="secondary-button"
-              style={{ textDecoration: 'none' }}
-            >
-              <WhatsappLogo size={16} /> WhatsApp
-            </a>
-            <a
-              href="mailto:buildwitharth@gmail.com"
-              className="secondary-button"
-              style={{ textDecoration: 'none' }}
-            >
-              <Envelope size={16} /> Email
-            </a>
-          </div>
-        </div>
-      </section>
 
       <section className="panel editor">
         <div className="panel-header">

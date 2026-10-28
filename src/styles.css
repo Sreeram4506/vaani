@@ -637,3 +637,107 @@ button { font: inherit; cursor: pointer; border: 0; }
   margin-top: 1px;
 }
 
+/* ─── Platform Dashboard Styles ───────────────────────── */
+.back-to-platform {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b1b8d9;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  margin: 20px 5px 0;
+  transition: .15s;
+}
+.back-to-platform:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+.breadcrumb-link {
+  background: transparent;
+  color: #7b8199;
+  font-size: 12px;
+  padding: 0;
+  font-weight: 500;
+  cursor: pointer;
+  transition: .15s;
+}
+.breadcrumb-link:hover { color: #4153a0; }
+
+.plan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 5px;
+  text-transform: capitalize;
+}
+
+.usage-mini { display: flex; flex-direction: column; gap: 4px; }
+.usage-mini span { font-size: 10px; color: #606981; }
+
+.usage-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf0f5;
+}
+.usage-bar-row:last-child { border-bottom: 0; }
+.usage-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 220px;
+}
+.usage-bar-label strong { font-size: 12px; color: #303858; }
+.usage-bar-track {
+  flex: 1;
+  height: 8px;
+  background: #e9eaf0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.usage-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width .3s ease;
+}
+.usage-bar-numbers {
+  min-width: 130px;
+  text-align: right;
+  font-size: 11px;
+  color: #303858;
+  font-weight: 600;
+}
+.usage-bar-total { color: #9096ac; font-weight: 500; }
+
+.revenue-summary {
+  text-align: center;
+  padding: 30px 20px;
+}
+.revenue-big {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #172044;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+}
+.revenue-big svg { color: #34a985; }
+.revenue-summary p {
+  margin: 8px 0 0;
+  color: #7b839c;
+  font-size: 13px;
+}
+
+@media(max-width:760px) {
+  .usage-bar-label { min-width: 140px; }
+  .usage-bar-numbers { min-width: 90px; font-size: 10px; }
+}
+

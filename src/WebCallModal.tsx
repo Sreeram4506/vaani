@@ -27,6 +27,7 @@ type Props = {
   notify: (msg: string) => void
   onCallSaved?: () => void
   initialAgentId?: string
+  orgId: string
 }
 
 const fallbackAgents: Agent[] = [
@@ -77,7 +78,8 @@ const fallbackAgents: Agent[] = [
   }
 ]
 
-export function WebCallModal({ close, notify, onCallSaved, initialAgentId }: Props) {
+export function WebCallModal({ close, notify, onCallSaved, initialAgentId, orgId }: Props) {
+  const base = `/api/org/${orgId}`
   const [agents, setAgents] = useState<Agent[]>(fallbackAgents)
   const [activeAgentId, setActiveAgentId] = useState<string>(initialAgentId || 'a-aditi')
   const [agentMenuOpen, setAgentMenuOpen] = useState(false)
@@ -101,7 +103,7 @@ export function WebCallModal({ close, notify, onCallSaved, initialAgentId }: Pro
 
   // Load agents from backend
   useEffect(() => {
-    fetch('/api/agents')
+    fetch(`${base}/agents`)
       .then(res => (res.ok ? res.json() : Promise.reject()))
       .then((data: { agents: Agent[] }) => {
         if (data.agents && data.agents.length > 0) {
@@ -299,7 +301,7 @@ export function WebCallModal({ close, notify, onCallSaved, initialAgentId }: Pro
     setIsThinking(true)
 
     try {
-      const response = await fetch('/api/web-call/reply', {
+      const response = await fetch(`${base}/web-call/reply`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -346,7 +348,7 @@ export function WebCallModal({ close, notify, onCallSaved, initialAgentId }: Pro
 
     // Persist to backend
     try {
-      await fetch('/api/web-call/complete', {
+      await fetch(`${base}/web-call/complete`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({

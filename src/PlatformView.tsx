@@ -20,10 +20,10 @@ type PlatformOverview = {
   totalContacts: number; totalCalls: number; totalLeads: number
   totalMinutesUsed: number; totalMinutesAllotted: number
   monthlyRevenue: number
-  orgBreakdown: Array<{
+  organizations: Array<{
     id: string; name: string; initials: string; plan: string
     status: string; color: string; usedMinutes: number; monthlyMinutes: number
-    contactCount: number; callCount: number
+    totalContacts?: number; totalCalls?: number
   }>
 }
 
@@ -121,7 +121,7 @@ function OverviewView({ notify, onSelectOrg }: { notify: Props['notify']; onSele
               </tr>
             </thead>
             <tbody>
-              {overview.orgBreakdown.map(org => {
+              {overview.organizations.map(org => {
                 const pc = planColor(org.plan)
                 return (
                   <tr key={org.id}>
@@ -149,8 +149,8 @@ function OverviewView({ notify, onSelectOrg }: { notify: Props['notify']; onSele
                         </div>
                       </div>
                     </td>
-                    <td>{org.contactCount}</td>
-                    <td>{org.callCount}</td>
+                    <td>{org.totalContacts ?? 0}</td>
+                    <td>{org.totalCalls ?? 0}</td>
                     <td>
                       <button className="row-button" onClick={() => onSelectOrg(org.id)}>
                         Open <ArrowRight size={12} />
@@ -407,7 +407,7 @@ function UsageView({ notify }: { notify: Props['notify'] }) {
           </div>
         </div>
         <div style={{ padding: '0 22px 22px' }}>
-          {overview.orgBreakdown.map(org => {
+          {overview.organizations.map(org => {
             const pct = org.monthlyMinutes > 0 ? (org.usedMinutes / org.monthlyMinutes) * 100 : 0
             return (
               <div key={org.id} className="usage-bar-row">

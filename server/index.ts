@@ -93,8 +93,18 @@ orgs.set('org-arth', {
     },
     {
       id: 'a-priya', name: 'Priya', language: 'te-IN', voice: 'Warm female', maxDuration: 300,
-      firstMessage: 'నమస్కారం {name} గారు! నేను ARTH Marketing Media నుండి ప్రియ మాట్లాడుతున్నాను. మీ వ్యాపారానికి ఆన్‌లైన్ సోషల్ మీడియా మరియు ఆఫ్‌లైన్ ప్రమోషన్స్ ద్వారా ఎక్కువ మంది కస్టమర్లను తీసుకురావడంలో మేము సహాయం చేస్తాము.',
-      prompt: `You are Priya, Local & Regional Outreach Specialist at ARTH Marketing Media.\nLanguage: Fluent Telugu mixed with English terms.\nExpertise: Offline growth, local promotions, shop/store promotions, event marketing, online+offline integration.\nCase Studies: Fit Secrets, Quantumrise Infra, Samadhai Technologies, Acuity Tax.\nContact: WhatsApp +91 9809987999.\nTone: Respectful, conversational Telugu.`
+      firstMessage: 'నమస్కారం {name} గారు! నేను ARTH Marketing Media నుండి ప్రియ మాట్లాడుతున్నాను. మీ వ్యాపారానికి ఆన్‌లైన్ సోషల్ మీడియా మరియు ఆఫ్‌లైన్ ప్రమోషన్స్ ద్వారా ఎక్కువ మంది కస్టమర్లను తీసుకురావడంలో మేము సహాయం చేస్తాము. మీతో మాట్లాడవచ్చా?',
+      prompt: `You are Priya, Local & Regional Outreach Specialist at ARTH Marketing Media.\nIMPORTANT: Always respond in Telugu (తెలుగు). Use natural conversational Telugu with occasional English business terms.\nExpertise: Offline growth, local promotions, shop/store promotions, event marketing, online+offline integration.\nCase Studies: Fit Secrets, Quantumrise Infra, Samadhai Technologies, Acuity Tax.\nContact: WhatsApp +91 9809987999.\nTone: Respectful, friendly, natural conversational Telugu like speaking to a neighbor. Use గారు when addressing.`
+    },
+    {
+      id: 'a-srikanth', name: 'Srikanth', language: 'te-IN', voice: 'Clear male', maxDuration: 300,
+      firstMessage: 'నమస్కారం {name} గారు! నేను ARTH Marketing Media నుండి శ్రీకాంత్. మీ బ్రాండ్ కోసం డిజిటల్ మార్కెటింగ్ స్ట్రాటజీ మరియు Google, Meta యాడ్స్ ద్వారా మీ బిజినెస్ ని స్కేల్ చేయడంలో సహాయం చేస్తాను. మీ ప్రస్తుత మార్కెటింగ్ గురించి చెప్పండి?',
+      prompt: `You are Srikanth, Digital Marketing Consultant at ARTH Marketing Media.\nIMPORTANT: Always respond in Telugu (తెలుగు). Use natural conversational Telugu. Mix English terms naturally for digital marketing concepts (ads, ROI, leads, campaigns, Meta, Google).\nExpertise: Meta Ads, Google Ads, Performance Marketing, Lead Generation, ROI Optimization.\nCase Studies: Fit Secrets (fitness D2C brand growth), Quantumrise Infra (real estate leads).\nContact: WhatsApp +91 9809987999.\nTone: Professional yet approachable Telugu, like a knowledgeable friend giving business advice.`
+    },
+    {
+      id: 'a-lavanya', name: 'Lavanya', language: 'te-IN', voice: 'Calm female', maxDuration: 300,
+      firstMessage: 'హలో {name} గారు! నేను లావణ్య, ARTH Technology టీమ్ నుండి మాట్లాడుతున్నాను. మీ బిజినెస్ కోసం వెబ్‌సైట్, ఈ-కామర్స్ స్టోర్ లేదా WhatsApp ఆటోమేషన్ సెటప్ చేయడంలో మేము హెల్ప్ చేస్తాము. మీకు ఏమి కావాలో చెప్పండి!',
+      prompt: `You are Lavanya, Technology Solutions Specialist at ARTH Marketing Media.\nIMPORTANT: Always respond in Telugu (తెలుగు). Use natural conversational Telugu with English tech terms.\nExpertise: Websites, e-commerce, WhatsApp Business API integration, SEO, mobile apps.\nCase Studies: Samadhai Technologies (AI platform), Acuity Tax (finance portal), Urban Stores (retail e-commerce).\nContact: WhatsApp +91 9809987999.\nTone: Helpful, patient, clear explanations in Telugu as if explaining tech to a business owner.`
     },
     {
       id: 'a-rhea', name: 'Rhea', language: 'en-IN', voice: 'Calm female', maxDuration: 300,
@@ -139,6 +149,7 @@ orgs.set('org-medpulse', {
     { id: 'mp-a1', name: 'Dr. Maya', language: 'en-IN', voice: 'Calm female', maxDuration: 300, firstMessage: 'Hello {name}, this is Dr. Maya from MedPulse Healthcare. I am calling to help you schedule your upcoming appointment or answer any health queries.', prompt: 'You are Dr. Maya, an AI appointment scheduler for MedPulse Healthcare. Help patients book, reschedule, or cancel appointments. Be empathetic and professional.' },
     { id: 'mp-a2', name: 'Arjun', language: 'en-IN', voice: 'Clear male', maxDuration: 300, firstMessage: 'Hi {name}, Arjun here from MedPulse. Just following up on your recent visit to ensure your recovery is going well.', prompt: 'You are Arjun, a patient follow-up coordinator at MedPulse Healthcare. Check on patients after visits, remind them about medication, and schedule follow-ups.' },
     { id: 'mp-a3', name: 'Neha', language: 'en-IN', voice: 'Warm female', maxDuration: 300, firstMessage: 'Hello {name}, this is Neha from MedPulse. I can help you with any insurance or billing queries related to your treatment.', prompt: 'You are Neha, insurance and billing specialist at MedPulse Healthcare. Help patients understand their coverage, claims status, and billing questions.' },
+    { id: 'mp-a4', name: 'Swathi', language: 'te-IN', voice: 'Warm female', maxDuration: 300, firstMessage: 'నమస్కారం {name} గారు! MedPulse Healthcare నుండి స్వాతి మాట్లాడుతున్నాను. మీ అపాయింట్‌మెంట్ షెడ్యూల్ చేయడంలో లేదా మీ ఆరోగ్య సందేహాలకు సమాధానాలు ఇవ్వడంలో నేను సహాయం చేస్తాను.', prompt: 'You are Swathi, Telugu-speaking Patient Care Coordinator at MedPulse Healthcare.\nIMPORTANT: Always respond in Telugu (తెలుగు). Use natural conversational Telugu with English medical terms when needed.\nHelp patients book appointments, understand prescriptions, and follow up on treatment plans.\nTone: Caring, patient, respectful Telugu. Use గారు when addressing patients.' },
   ],
   campaigns: [{ id: 'mp-camp1', name: 'Patient Follow-up Q4', status: 'running', agentId: 'mp-a2', listName: 'Patient Follow-up', contacted: 312, total: 800, maxConcurrent: 5, windowStart: '09:00', windowEnd: '17:00', attempts: 2 }],
   calls: [
@@ -170,6 +181,7 @@ orgs.set('org-zenith', {
     { id: 'zp-a1', name: 'Rohan', language: 'en-IN', voice: 'Clear male', maxDuration: 300, firstMessage: 'Hello {name}! Rohan from Zenith Properties. We have premium plotted communities and villas across South India. Are you exploring investment opportunities?', prompt: 'You are Rohan, Property Inquiry Specialist at Zenith Properties. Help prospects learn about available plots, villas, pricing and locations. Be knowledgeable about real estate trends.' },
     { id: 'zp-a2', name: 'Meera', language: 'en-IN', voice: 'Warm female', maxDuration: 300, firstMessage: 'Hi {name}! Meera from Zenith Properties. I can help you schedule a site visit to any of our ongoing projects. When would be convenient?', prompt: 'You are Meera, Site Visit Coordinator at Zenith Properties. Schedule site visits, provide directions, and share project details.' },
     { id: 'zp-a3', name: 'Anil', language: 'en-IN', voice: 'Calm male', maxDuration: 300, firstMessage: 'Hello {name}, Anil from Zenith Properties. I specialize in home loan assistance and can help you understand financing options for your property purchase.', prompt: 'You are Anil, Home Loan Specialist at Zenith Properties. Help buyers understand EMI options, loan eligibility, and documentation.' },
+    { id: 'zp-a4', name: 'Surekha', language: 'te-IN', voice: 'Warm female', maxDuration: 300, firstMessage: 'నమస్కారం {name} గారు! Zenith Properties నుండి సురేఖ మాట్లాడుతున్నాను. హైదరాబాద్ చుట్టుపక్కల ప్లాట్లు మరియు విల్లాల గురించి మీకు సమాచారం అందించగలను. మీకు ఏ ఏరియాలో ఆసక్తి ఉంది?', prompt: 'You are Surekha, Telugu-speaking Property Advisor at Zenith Properties.\nIMPORTANT: Always respond in Telugu (తెలుగు). Use natural conversational Telugu with English real estate terms.\nExpertise: Plots, villas, pricing, site visits, locations around Hyderabad and South India.\nTone: Warm, trustworthy, like a knowledgeable local real estate advisor. Use గారు when addressing.' },
   ],
   campaigns: [{ id: 'zp-camp1', name: 'Festive Season Plot Launch', status: 'running', agentId: 'zp-a1', listName: 'Villa Prospects', contacted: 420, total: 1500, maxConcurrent: 12, windowStart: '10:00', windowEnd: '20:00', attempts: 3 }],
   calls: [
@@ -199,6 +211,7 @@ orgs.set('org-cloudstack', {
   agents: [
     { id: 'cs-a1', name: 'Alex', language: 'en-IN', voice: 'Calm male', maxDuration: 300, firstMessage: 'Hello {name}, Alex from CloudStack Technologies. How can I help you with our platform today?', prompt: 'You are Alex, Technical Support at CloudStack Technologies, a SaaS platform. Help users troubleshoot issues, explain features, and escalate complex problems.' },
     { id: 'cs-a2', name: 'Ravi', language: 'en-IN', voice: 'Clear male', maxDuration: 300, firstMessage: 'Hi {name}! Ravi from CloudStack. I saw you requested a product demo. Let me walk you through how we can help your team.', prompt: 'You are Ravi, Sales Demo Specialist at CloudStack Technologies. Conduct product demos, explain pricing tiers, and help prospects evaluate the platform.' },
+    { id: 'cs-a3', name: 'Harsha', language: 'te-IN', voice: 'Clear male', maxDuration: 300, firstMessage: 'నమస్కారం {name} గారు! CloudStack Technologies నుండి హర్ష మాట్లాడుతున్నాను. మా ప్లాట్‌ఫారమ్ గురించి మీకు డెమో ఇవ్వగలను. మీ టీమ్ సైజ్ ఎంత, ఏ ఫీచర్లు కావాలో చెప్పండి!', prompt: 'You are Harsha, Telugu-speaking Technical Sales at CloudStack Technologies.\nIMPORTANT: Always respond in Telugu (తెలుగు). Use natural conversational Telugu with English tech terms (SaaS, API, cloud, deployment).\nHelp prospects understand CloudStack platform features, pricing, and technical capabilities.\nTone: Enthusiastic, technically knowledgeable, friendly Telugu.' },
   ],
   campaigns: [{ id: 'cs-camp1', name: 'Q4 Product Demo Outreach', status: 'paused', agentId: 'cs-a2', listName: 'Demo Requests', contacted: 45, total: 200, maxConcurrent: 3, windowStart: '10:00', windowEnd: '18:00', attempts: 2 }],
   calls: [
@@ -226,6 +239,7 @@ orgs.set('org-freshbasket', {
   agents: [
     { id: 'fb-a1', name: 'Lakshmi', language: 'en-IN', voice: 'Warm female', maxDuration: 300, firstMessage: 'Hello {name}! Lakshmi from FreshBasket. I can help you with your recent order, delivery tracking, or any product queries.', prompt: 'You are Lakshmi, Customer Support at FreshBasket, an online grocery chain. Help customers with orders, deliveries, returns, and product availability.' },
     { id: 'fb-a2', name: 'Kiran', language: 'en-IN', voice: 'Clear male', maxDuration: 300, firstMessage: 'Hi {name}! Kiran from FreshBasket Franchise Division. Interested in owning a FreshBasket store in your city? Let me share the details.', prompt: 'You are Kiran, Franchise Development Manager at FreshBasket. Explain franchise models, investment requirements, ROI projections, and territory availability.' },
+    { id: 'fb-a3', name: 'Padma', language: 'te-IN', voice: 'Calm female', maxDuration: 300, firstMessage: 'నమస్కారం {name} గారు! FreshBasket నుండి పద్మ మాట్లాడుతున్నాను. మీ ఆర్డర్, డెలివరీ లేదా ఏదైనా ఆఫర్ల గురించి సహాయం చేయగలను. చెప్పండి!', prompt: 'You are Padma, Telugu-speaking Customer Care at FreshBasket.\nIMPORTANT: Always respond in Telugu (తెలుగు). Use natural conversational Telugu.\nHelp customers with orders, delivery tracking, returns, seasonal offers, and product queries.\nTone: Friendly, helpful, like a caring shopkeeper. Use గారు when addressing.' },
   ],
   campaigns: [{ id: 'fb-camp1', name: 'Diwali Loyalty Promo', status: 'running', agentId: 'fb-a1', listName: 'Loyalty Members', contacted: 189, total: 600, maxConcurrent: 6, windowStart: '09:00', windowEnd: '18:00', attempts: 2 }],
   calls: [
@@ -515,9 +529,9 @@ orgRouter.patch('/settings', (req, res) => {
 
 function detectOutcome(messages: Array<{ role: string; text: string }>, reply: string): string {
   const text = (messages.map(m => m.text).join(' ') + ' ' + reply).toLowerCase()
-  if (/callback|రేపు|tomorrow|call back|later|schedule|next week|busy/.test(text)) return 'callback_requested'
-  if (/not interested|వద్దు|no thanks|stop calling|remove me|unsubscribe/.test(text)) return 'not_interested'
-  if (/audit|strategy|demo|interested|yes|sure|pricing|website|campaign|sign up|book|సరే|ఆసక్తి/.test(text)) return 'interested'
+  if (/callback|రేపు|తర్వాత|tomorrow|call back|later|schedule|next week|busy|बाद में|कल/.test(text)) return 'callback_requested'
+  if (/not interested|వద్దు|అక్కర్లేదు|no thanks|stop calling|remove me|unsubscribe|नहीं|रुकिए/.test(text)) return 'not_interested'
+  if (/audit|strategy|demo|interested|yes|sure|pricing|website|campaign|sign up|book|సరే|ఆసక్తి|కావాలి|చెప్పండి|हां|बताइए/.test(text)) return 'interested'
   return 'in_progress'
 }
 
@@ -551,12 +565,33 @@ orgRouter.post('/web-call/reply', async (req, res) => {
   }
 
   const lower = lastUserMsg.toLowerCase()
+  const isTelugu = activeAgent.language === 'te-IN'
+  const isHindi = activeAgent.language === 'hi-IN'
   let reply = '', outcome = 'in_progress'
   if (!lastUserMsg) { reply = activeAgent.firstMessage.replace('{name}', userName) }
-  else if (/yes|sure|ok|interested|audit|demo|strategy|pricing|cost|book/.test(lower)) { reply = `Great to hear! Our team at ${store.org.name} will follow up within 24 hours. What time works best for you?`; outcome = 'interested' }
-  else if (/tomorrow|later|next week|busy|callback|call me back/.test(lower)) { reply = `Noted! We will schedule the callback. Thank you for your time!`; outcome = 'callback_requested' }
-  else if (/no|not interested|stop|unsubscribe/.test(lower)) { reply = `Understood! Thank you for your time. ${store.org.name} is always here if you need us. Have a great day!`; outcome = 'not_interested' }
-  else { reply = `Thanks for sharing. At ${store.org.name}, we would love to help. Would you like to learn more about our services?` }
+  else if (/yes|sure|ok|interested|audit|demo|strategy|pricing|cost|book|సరే|ఆసక్తి|కావాలి|చెప్పండి|हां|बताइए/.test(lower)) {
+    reply = isTelugu ? `చాలా బాగుంది! ${store.org.name} టీమ్ 24 గంటల్లో మీకు ఫాలో అప్ చేస్తుంది. మీకు ఏ సమయం అనుకూలంగా ఉంటుంది?`
+      : isHindi ? `बहुत अच्छा! ${store.org.name} की टीम 24 घंटे में फॉलो अप करेगी। आपको कौन सा समय सही रहेगा?`
+      : `Great to hear! Our team at ${store.org.name} will follow up within 24 hours. What time works best for you?`
+    outcome = 'interested'
+  }
+  else if (/tomorrow|later|next week|busy|callback|call me back|రేపు|తర్వాత|బిజీ|कल|बाद में/.test(lower)) {
+    reply = isTelugu ? `అర్థమైంది! మేము కాల్‌బ్యాక్ షెడ్యూల్ చేస్తాము. మీ సమయానికి ధన్యవాదాలు!`
+      : isHindi ? `समझ गए! हम कॉलबैक शेड्यूल कर देंगे। आपके समय के लिए धन्यवाद!`
+      : `Noted! We will schedule the callback. Thank you for your time!`
+    outcome = 'callback_requested'
+  }
+  else if (/no|not interested|stop|unsubscribe|వద్దు|అక్కర్లేదు|नहीं|रुकिए/.test(lower)) {
+    reply = isTelugu ? `అర్థమైంది! మీ సమయానికి ధన్యవాదాలు. ${store.org.name} ఎప్పుడైనా మీకు సహాయం చేయడానికి సిద్ధంగా ఉంటుంది. శుభదినం!`
+      : isHindi ? `समझ गए! आपके समय के लिए धन्यवाद। ${store.org.name} हमेशा आपकी मदद के लिए तैयार है। शुभ दिन!`
+      : `Understood! Thank you for your time. ${store.org.name} is always here if you need us. Have a great day!`
+    outcome = 'not_interested'
+  }
+  else {
+    reply = isTelugu ? `మీరు చెప్పింది అర్థమైంది. ${store.org.name} లో మేము మీకు సహాయం చేయగలము. మా సేవల గురించి మరింత తెలుసుకోవాలనుకుంటున్నారా?`
+      : isHindi ? `आपकी बात समझ में आई। ${store.org.name} में हम आपकी मदद कर सकते हैं। क्या आप हमारी सेवाओं के बारे में और जानना चाहेंगे?`
+      : `Thanks for sharing. At ${store.org.name}, we would love to help. Would you like to learn more about our services?`
+  }
   res.json({ reply, outcome, agentName: activeAgent.name })
 })
 

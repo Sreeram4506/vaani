@@ -4,6 +4,7 @@ import {
   PhoneDisconnect, PaperPlaneRight, Sparkle,
   CheckCircle, ArrowCounterClockwise, X, CaretDown
 } from '@phosphor-icons/react'
+import { speak } from './voiceEngine'
 
 type Agent = {
   id: string
@@ -68,6 +69,24 @@ const fallbackAgents: Agent[] = [
     prompt: 'Local & Regional Outreach Specialist at ARTH'
   },
   {
+    id: 'a-srikanth',
+    name: 'Srikanth',
+    language: 'te-IN',
+    voice: 'Clear male',
+    maxDuration: 300,
+    firstMessage: 'నమస్కారం! నేను ARTH Marketing Media నుండి శ్రీకాంత్. మీ బ్రాండ్ కోసం డిజిటల్ మార్కెటింగ్ స్ట్రాటజీ మరియు Google, Meta యాడ్స్ ద్వారా మీ బిజినెస్ ని స్కేల్ చేయడంలో సహాయం చేస్తాను. మీ ప్రస్తుత మార్కెటింగ్ గురించి చెప్పండి?',
+    prompt: 'Digital Marketing Consultant at ARTH (Telugu)'
+  },
+  {
+    id: 'a-lavanya',
+    name: 'Lavanya',
+    language: 'te-IN',
+    voice: 'Calm female',
+    maxDuration: 300,
+    firstMessage: 'హలో! నేను లావణ్య, ARTH Technology టీమ్ నుండి మాట్లాడుతున్నాను. మీ బిజినెస్ కోసం వెబ్‌సైట్, ఈ-కామర్స్ స్టోర్ లేదా WhatsApp ఆటోమేషన్ సెటప్ చేయడంలో మేము హెల్ప్ చేస్తాము. మీకు ఏమి కావాలో చెప్పండి!',
+    prompt: 'Technology Solutions Specialist at ARTH (Telugu)'
+  },
+  {
     id: 'a-rhea',
     name: 'Rhea',
     language: 'en-IN',
@@ -129,22 +148,17 @@ export function WebCallModal({ close, notify, onCallSaved, initialAgentId, orgId
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
   }
 
-  // Voice speech synthesis
   const speakText = (text: string) => {
-    if (!speakerEnabled || !('speechSynthesis' in window)) return
-    try {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = activeAgent.language === 'te-IN' ? 'te-IN' : 'en-IN'
-      utterance.rate = activeAgent.language === 'te-IN' ? 0.95 : 1.0
-      utterance.onstart = () => setIsSpeaking(true)
-      utterance.onend = () => setIsSpeaking(false)
-      utterance.onerror = () => setIsSpeaking(false)
-      synthRef.current = utterance
-      window.speechSynthesis.speak(utterance)
-    } catch {
-      setIsSpeaking(false)
-    }
+    if (!speakerEnabled) return
+    const utterance = speak(
+      text,
+      activeAgent.language,
+      activeAgent.voice,
+      () => setIsSpeaking(true),
+      () => setIsSpeaking(false),
+      () => setIsSpeaking(false)
+    )
+    synthRef.current = utterance
   }
 
   // Connect to the active agent
@@ -211,7 +225,7 @@ export function WebCallModal({ close, notify, onCallSaved, initialAgentId, orgId
       const recognition = new SpeechRecognition()
       recognition.continuous = true
       recognition.interimResults = true
-      recognition.lang = activeAgent.language === 'te-IN' ? 'te-IN' : 'en-IN'
+      recognition.lang = activeAgent.language || 'en-IN'
 
       recognition.onstart = () => setIsListening(true)
       recognition.onend = () => {
@@ -376,6 +390,24 @@ export function WebCallModal({ close, notify, onCallSaved, initialAgentId, orgId
 
   // Dynamic quick prompts based on active agent
   const getQuickPrompts = () => {
+    if (activeAgent.id === 'a-srikanth') {
+      return [
+        'Meta యాడ్స్ ద్వారా లీడ్స్ ఎలా జెనరేట్ చేస్తారు?',
+        'Google Ads ROI ఎంత వస్తుంది?',
+        'Fit Secrets కేస్ స్టడీ చెప్పండి',
+        'మా బ్రాండ్ కి డిజిటల్ మార్కెటింగ్ ప్లాన్ కావాలి',
+        'రేపు సాయంత్రం కాల్ చేయండి'
+      ]
+    }
+    if (activeAgent.id === 'a-lavanya') {
+      return [
+        'మా బిజినెస్ కి వెబ్‌సైట్ డిజైన్ చేయగలరా?',
+        'WhatsApp ఆటోమేషన్ ఎలా పనిచేస్తుంది?',
+        'ఈ-కామర్స్ స్టోర్ సెటప్ ఖర్చు ఎంత?',
+        'SEO సర్వీసెస్ గురించి చెప్పండి',
+        'ఫ్రీ వెబ్‌సైట్ ఆడిట్ చేయగలరా?'
+      ]
+    }
     if (activeAgent.language === 'te-IN') {
       return [
         'మీ 4-స్టెప్ ప్రాసెస్ ఎలా పనిచేస్తుంది?',
@@ -431,7 +463,7 @@ export function WebCallModal({ close, notify, onCallSaved, initialAgentId, orgId
         <header className="webcall-header">
           <div className="webcall-identity">
             <div className={`webcall-avatar ${isSpeaking ? 'speaking' : ''}`}>
-              <span>{activeAgent.name === 'Priya' ? 'ప' : activeAgent.name[0]}</span>
+              <span>{activeAgent.language === 'te-IN' ? ({ Priya: 'ప', Srikanth: 'శ', Lavanya: 'ల' }[activeAgent.name] ?? activeAgent.name[0]) : activeAgent.name[0]}</span>
               {isSpeaking && <div className="avatar-pulse-ring" />}
             </div>
             <div>
@@ -480,7 +512,7 @@ export function WebCallModal({ close, notify, onCallSaved, initialAgentId, orgId
                         notify(`Switched to ${a.name} (${a.language})`)
                       }}
                     >
-                      <span className="agent-mini-tile">{a.name === 'Priya' ? 'ప' : a.name[0]}</span>
+                      <span className="agent-mini-tile">{a.language === 'te-IN' ? ({ Priya: 'ప', Srikanth: 'శ', Lavanya: 'ల' }[a.name] ?? a.name[0]) : a.name[0]}</span>
                       <div>
                         <strong>{a.name}</strong>
                         <small>{a.language} · {a.voice}</small>

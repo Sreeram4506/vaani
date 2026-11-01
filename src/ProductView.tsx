@@ -280,12 +280,19 @@ function Agents({ notify, openWebCall, base }: { notify: Props['notify']; openWe
         return 'Web & Tech Integration'
       case 'Priya':
         return 'Telugu Regional Outreach'
+      case 'Srikanth':
+        return 'Telugu Digital Marketing'
+      case 'Lavanya':
+        return 'Telugu Tech Solutions'
       case 'Rhea':
         return 'Marketing Funnel Audit'
       default:
-        return 'ARTH Voice AI'
+        return 'Voice AI Agent'
     }
   }
+
+  const teluguInitials: Record<string, string> = { Priya: 'ప', Srikanth: 'శ', Lavanya: 'ల', Swathi: 'స', Surekha: 'సు', Harsha: 'హ', Padma: 'ప' }
+  const agentInitial = (agent: Agent) => agent.language === 'te-IN' ? (teluguInitials[agent.name] ?? agent.name[0]) : agent.name[0]
 
   return (
     <>
@@ -316,7 +323,7 @@ function Agents({ notify, openWebCall, base }: { notify: Props['notify']; openWe
               className={editing?.id === agent.id ? 'agent-row selected' : 'agent-row'}
               onClick={() => setEditing(agent)}
             >
-              <span className="agent-tile">{agent.name === 'Priya' ? 'ప' : agent.name[0]}</span>
+              <span className="agent-tile">{agentInitial(agent)}</span>
               <div>
                 <strong>{agent.name}</strong>
                 <small>{getAgentTag(agent.name)}</small>

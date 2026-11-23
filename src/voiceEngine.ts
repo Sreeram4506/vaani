@@ -9,64 +9,64 @@ type VoiceProfile = {
 const VOICE_PROFILES: Record<string, VoiceProfile> = {
   'te-IN-female-warm': {
     lang: 'te-IN',
-    pitch: 1.05,
-    rate: 0.88,
+    pitch: 1.0,
+    rate: 0.95,
     volume: 1.0,
     preferredVoiceKeywords: ['telugu', 'te-IN', 'te_IN', 'తెలుగు', 'shruti', 'neural', 'enhanced'],
   },
   'te-IN-male-clear': {
     lang: 'te-IN',
-    pitch: 0.85,
-    rate: 0.90,
+    pitch: 0.9,
+    rate: 0.97,
     volume: 1.0,
     preferredVoiceKeywords: ['telugu', 'te-IN', 'te_IN', 'తెలుగు', 'neural', 'enhanced'],
   },
   'te-IN-female-calm': {
     lang: 'te-IN',
     pitch: 0.95,
-    rate: 0.85,
-    volume: 0.95,
+    rate: 0.93,
+    volume: 1.0,
     preferredVoiceKeywords: ['telugu', 'te-IN', 'te_IN', 'తెలుగు', 'neural', 'enhanced'],
   },
   'en-IN-female-warm': {
     lang: 'en-IN',
-    pitch: 1.05,
-    rate: 0.95,
+    pitch: 1.0,
+    rate: 1.0,
     volume: 1.0,
     preferredVoiceKeywords: ['indian', 'en-IN', 'en_IN', 'rishi', 'neerja', 'neural', 'enhanced'],
   },
   'en-IN-male-clear': {
     lang: 'en-IN',
-    pitch: 0.90,
-    rate: 0.97,
+    pitch: 0.95,
+    rate: 1.0,
     volume: 1.0,
     preferredVoiceKeywords: ['indian', 'en-IN', 'en_IN', 'rishi', 'neural', 'enhanced'],
   },
   'en-IN-male-calm': {
     lang: 'en-IN',
-    pitch: 0.85,
-    rate: 0.92,
-    volume: 0.95,
+    pitch: 0.9,
+    rate: 0.97,
+    volume: 1.0,
     preferredVoiceKeywords: ['indian', 'en-IN', 'en_IN', 'rishi', 'neural', 'enhanced'],
   },
   'en-IN-female-calm': {
     lang: 'en-IN',
     pitch: 0.95,
-    rate: 0.93,
-    volume: 0.95,
+    rate: 0.98,
+    volume: 1.0,
     preferredVoiceKeywords: ['indian', 'en-IN', 'en_IN', 'neerja', 'neural', 'enhanced'],
   },
   'hi-IN-female-warm': {
     lang: 'hi-IN',
-    pitch: 1.05,
-    rate: 0.90,
+    pitch: 1.0,
+    rate: 0.97,
     volume: 1.0,
     preferredVoiceKeywords: ['hindi', 'hi-IN', 'hi_IN', 'swara', 'neural', 'enhanced'],
   },
   'hi-IN-male-clear': {
     lang: 'hi-IN',
-    pitch: 0.88,
-    rate: 0.92,
+    pitch: 0.92,
+    rate: 0.98,
     volume: 1.0,
     preferredVoiceKeywords: ['hindi', 'hi-IN', 'hi_IN', 'madhur', 'neural', 'enhanced'],
   },
@@ -151,6 +151,49 @@ export function getProfileKey(language: string, voice: string): string {
   return key in VOICE_PROFILES ? key : `${langPrefix}-female-warm`
 }
 
+function cleanTextForSpeech(text: string): string {
+  let cleaned = text
+    .replace(/[​-‍﻿­]/g, '')
+    .replace(/\{name\}/gi, '')
+    .replace(/[*_~`#>|]/g, '')
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/[+]\d[\d\s-]{8,}/g, '')
+    .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+  return cleaned
+}
+
+function splitByScript(text: string): Array<{ text: string; isIndic: boolean }> {
+  const segments: Array<{ text: string; isIndic: boolean }> = []
+  const indicRange = /[ఀ-౿ऀ-ॿঀ-৿਀-੿઀-૿଀-୿஀-௿ಀ-೿ഀ-ൿ]/
+  let current = ''
+  let currentIsIndic = false
+
+  for (const char of text) {
+    const charIsIndic = indicRange.test(char)
+    const isSpace = /\s/.test(char)
+
+    if (isSpace) {
+      current += char
+      continue
+    }
+
+    if (current.trim() && charIsIndic !== currentIsIndic) {
+      segments.push({ text: current.trim(), isIndic: currentIsIndic })
+      current = ''
+    }
+    currentIsIndic = charIsIndic
+    current += char
+  }
+
+  if (current.trim()) {
+    segments.push({ text: current.trim(), isIndic: currentIsIndic })
+  }
+
+  return segments
+}
+
 export function speak(
   text: string,
   language: string,
@@ -164,24 +207,51 @@ export function speak(
   try {
     window.speechSynthesis.cancel()
 
+    const cleaned = cleanTextForSpeech(text)
+    if (!cleaned) { onEnd?.(); return null }
+
     const profileKey = getProfileKey(language, voice)
     const profile = VOICE_PROFILES[profileKey] ?? VOICE_PROFILES['en-IN-female-warm']
+    const isIndicLang = language.startsWith('te') || language.startsWith('hi')
 
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = profile.lang
-    utterance.pitch = profile.pitch
-    utterance.rate = profile.rate
-    utterance.volume = profile.volume
+    const segments = isIndicLang ? splitByScript(cleaned) : [{ text: cleaned, isIndic: false }]
+    const mergedSegments: Array<{ text: string; lang: string }> = []
 
-    const bestVoice = findBestVoice(profile)
-    if (bestVoice) utterance.voice = bestVoice
+    for (const seg of segments) {
+      const segLang = seg.isIndic ? profile.lang : (isIndicLang ? 'en-IN' : profile.lang)
+      const prev = mergedSegments[mergedSegments.length - 1]
+      if (prev && prev.lang === segLang) {
+        prev.text += ' ' + seg.text
+      } else {
+        mergedSegments.push({ text: seg.text, lang: segLang })
+      }
+    }
 
-    utterance.onstart = () => onStart?.()
-    utterance.onend = () => onEnd?.()
-    utterance.onerror = () => onError?.()
+    let started = false
+    const total = mergedSegments.length
+    let completed = 0
 
-    window.speechSynthesis.speak(utterance)
-    return utterance
+    for (let i = 0; i < total; i++) {
+      const seg = mergedSegments[i]
+      const segProfile = seg.lang === profile.lang ? profile : (VOICE_PROFILES[getProfileKey(seg.lang, voice)] ?? profile)
+
+      const utterance = new SpeechSynthesisUtterance(seg.text)
+      utterance.lang = seg.lang
+      utterance.pitch = segProfile.pitch
+      utterance.rate = segProfile.rate
+      utterance.volume = segProfile.volume
+
+      const bestVoice = findBestVoice(segProfile)
+      if (bestVoice) utterance.voice = bestVoice
+
+      utterance.onstart = () => { if (!started) { started = true; onStart?.() } }
+      utterance.onend = () => { completed++; if (completed >= total) onEnd?.() }
+      utterance.onerror = () => { completed++; if (completed >= total) onError?.() }
+
+      window.speechSynthesis.speak(utterance)
+    }
+
+    return null
   } catch {
     onError?.()
     return null

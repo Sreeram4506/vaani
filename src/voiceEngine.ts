@@ -227,9 +227,32 @@ export function speak(
       }
     }
 
+    const shortEnglishInIndic = isIndicLang && mergedSegments.length > 2
+    if (shortEnglishInIndic) {
+      const consolidated: Array<{ text: string; lang: string }> = []
+      for (const seg of mergedSegments) {
+        const isShortEnglish = seg.lang === 'en-IN' && seg.text.split(/\s+/).length <= 3
+        const prev = consolidated[consolidated.length - 1]
+        if (isShortEnglish && prev && prev.lang === profile.lang) {
+          prev.text += ' ' + seg.text
+        } else {
+          consolidated.push({ ...seg })
+        }
+      }
+      mergedSegments.length = 0
+      mergedSegments.push(...consolidated)
+    }
+
     let started = false
     const total = mergedSegments.length
     let completed = 0
+
+    const resumeTimer = setInterval(() => {
+      if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) return
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume()
+    }, 5000)
+
+    const done = () => { clearInterval(resumeTimer) }
 
     for (let i = 0; i < total; i++) {
       const seg = mergedSegments[i]
@@ -245,8 +268,8 @@ export function speak(
       if (bestVoice) utterance.voice = bestVoice
 
       utterance.onstart = () => { if (!started) { started = true; onStart?.() } }
-      utterance.onend = () => { completed++; if (completed >= total) onEnd?.() }
-      utterance.onerror = () => { completed++; if (completed >= total) onError?.() }
+      utterance.onend = () => { completed++; if (completed >= total) { done(); onEnd?.() } }
+      utterance.onerror = () => { completed++; if (completed >= total) { done(); onError?.() } }
 
       window.speechSynthesis.speak(utterance)
     }

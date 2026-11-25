@@ -529,7 +529,10 @@ orgRouter.patch('/settings', (req, res) => {
 
 function cleanReply(text: string): string {
   let cleaned = text
-    .replace(/^(హా అండి|హా|అండి|Haa andi|Haa|andi|Hmm|Umm|Ummm|Actually|Basically|So basically|Well|You know|Like)[,.\s!]*/i, '')
+    .replace(/^(హా అండి|హా|అండి|Haa andi|Haa|andi|Hmm+|Umm+|Actually,?|Basically,?|So basically,?|Well,?|You know,?|Like,?)\s*/gi, '')
+    .replace(/\b(haa andi|haa|andi)\b/gi, '')
+    .replace(/(హా అండి|హా అండీ)/g, '')
+    .replace(/\.{2,}/g, '.')
     .replace(/\s{2,}/g, ' ')
     .trim()
   if (!cleaned) return text.trim()
@@ -562,7 +565,7 @@ orgRouter.post('/web-call/reply', async (req, res) => {
             { role: 'system', content: `${activeAgent.prompt}\nThe prospect's name is ${userName}.\n\nCRITICAL SPEECH RULES:\n- Reply in 1-2 complete sentences only. No rambling.\n- NEVER start with filler words like "Haa", "andi", "Haa andi", "hmm", "umm", "so", "well", "actually", "basically".\n- In Telugu: NEVER use "హా", "అండి", "హా అండి" as sentence starters or fillers.\n- Answer the user's question directly. Do not change the topic.\n- Every sentence must be clear and complete with proper grammar.\n- Disclose you are an AI if asked.` },
             ...messages.slice(-8).map(m => ({ role: m.role === 'user' ? ('user' as const) : ('assistant' as const), content: m.text }))
           ],
-          max_tokens: 160, temperature: 0.7
+          max_tokens: 100, temperature: 0.4
         })
       })
       if (aiResponse.ok) {
